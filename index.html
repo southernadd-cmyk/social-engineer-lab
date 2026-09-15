@@ -11,62 +11,101 @@
   <main class="app-shell">
     <header class="hero">
       <div>
-        <p class="eyebrow">AAQ IT · UNIT 2 · SCENARIO ANALYSIS</p>
+        <p class="eyebrow">AAQ IT · UNIT 2 · SAFE SIMULATION</p>
         <h1>Social Engineer <span>Lab</span></h1>
-        <p class="lede">Play both sides of realistic fictional social-engineering incidents. Use the briefing, make decisions, then turn the debrief into evidence for your lesson work.</p>
+        <p class="lede">Play both sides of a fictional social-engineering incident. Practise recognising manipulation, defending against it, and explaining the controls that reduce risk.</p>
       </div>
-      <div class="hero-badge"><strong>TRAINING ONLY</strong><span>Fictional people · fictional organisations · no real credentials</span></div>
+      <div class="hero-badge" aria-label="Fictional training only">
+        <strong>TRAINING ONLY</strong>
+        <span>No real targets · no real credentials</span>
+      </div>
     </header>
 
     <div id="backendWarning" class="backend-warning hidden" role="status"></div>
 
     <section id="setup" class="panel setup-panel">
-      <div class="lesson-strip"><strong>LESSON TASK</strong><span>Complete at least <b>one Red Team</b> and <b>one Blue Team</b> scenario. Finish each debrief and copy the evidence text into your Class Notebook document.</span></div>
-      <div class="section-title"><span class="step">01</span><div><h2>Choose your side</h2><p>Red Team explores how human vulnerabilities are exploited. Blue Team practises recognising, verifying and reporting.</p></div></div>
-      <div class="mode-grid" role="radiogroup" aria-label="Choose mode">
-        <button class="mode-card selected defender" data-mode="defender" type="button"><span class="mode-icon">🛡️</span><span><strong>Blue Team</strong><small>You are the defender. Spot the manipulation and use the correct control.</small></span></button>
-        <button class="mode-card attacker" data-mode="attacker" type="button"><span class="mode-icon">🎭</span><span><strong>Red Team</strong><small>You are the social engineer inside a closed fictional simulation.</small></span></button>
+      <div class="section-title">
+        <span class="step">01</span>
+        <div><h2>Choose your side</h2><p>Both modes use the same scenarios, but your job changes.</p></div>
       </div>
-      <div class="section-title compact"><span class="step">02</span><div><h2>Choose a mission</h2><p>Every mission has a defined vulnerability, policy and winnable success path.</p></div></div>
+      <div class="mode-grid" role="radiogroup" aria-label="Choose mode">
+        <button class="mode-card selected defender" data-mode="defender" type="button">
+          <span class="mode-icon">🛡️</span><span><strong>Blue Team</strong><small>You are the target. Spot the manipulation and take the right action.</small></span>
+        </button>
+        <button class="mode-card attacker" data-mode="attacker" type="button">
+          <span class="mode-icon">🎭</span><span><strong>Red Team</strong><small>You are the social engineer. Work out which levers move a real person.</small></span>
+        </button>
+      </div>
+
+      <div class="section-title compact">
+        <span class="step">02</span>
+        <div><h2>Choose a scenario</h2><p>Each one maps to social engineering or physical security content.</p></div>
+      </div>
       <div id="scenarioGrid" class="scenario-grid" aria-live="polite"></div>
+
       <div class="setup-footer">
-        <label>Difficulty<select id="difficulty"><option value="easy">Level 1 · Guided — 2 progress goals</option><option value="medium" selected>Level 2 · Standard — 3 progress goals</option><option value="hard">Level 3 · Challenge — all 4 progress goals</option></select></label>
-        <button id="startBtn" class="primary" type="button" disabled>Open mission briefing</button>
+        <label>Difficulty
+          <select id="difficulty"></select>
+          <span id="difficultyBlurb" class="field-note"></span>
+        </label>
+        <button id="startBtn" class="primary" type="button" disabled>Start simulation</button>
       </div>
     </section>
 
     <section id="simulation" class="panel simulation hidden" aria-live="polite">
-      <div class="sim-topbar"><button id="backBtn" class="ghost" type="button">← Change mission</button><div class="sim-status"><span id="modePill" class="pill"></span><span id="turnCount">0 / 14 turns</span></div></div>
-      <div class="scenario-brief"><div><p class="eyebrow" id="channel"></p><h2 id="scenarioTitle"></h2><p id="briefText"></p></div><div class="objective"><span>YOUR OBJECTIVE</span><strong id="objectiveText"></strong></div></div>
-      <section class="mission-panel">
-        <div class="intel-heading"><div><p class="eyebrow">MISSION BRIEFING</p><h3 id="briefingTitle">What you know</h3><p id="difficultyBrief"></p></div><div class="difficulty-card"><span>WIN CONDITION</span><p id="winCondition"></p></div></div>
-        <div class="briefing-grid">
-          <article><span class="card-label">YOUR ROLE</span><strong id="missionRole"></strong><p id="missionTarget"></p></article>
-          <article><span class="card-label">WHAT YOU KNOW</span><ul id="knownList"></ul></article>
-          <article id="unknownCard"><span class="card-label">WHAT YOU DO NOT KNOW</span><ul id="unknownList"></ul></article>
-          <article><span class="card-label">POLICY / SAFE PROCESS</span><p id="policyText"></p></article>
-          <article><span class="card-label">HUMAN FACTOR</span><p id="vulnerabilityText"></p></article>
+      <div class="sim-topbar">
+        <button id="backBtn" class="ghost" type="button">← Change scenario</button>
+        <div class="sim-status"><span id="modePill" class="pill"></span><span id="turnCount"></span></div>
+      </div>
+
+      <div class="scenario-brief">
+        <div>
+          <p class="eyebrow" id="channel"></p>
+          <h2 id="scenarioTitle"></h2>
+          <p id="briefText"></p>
+          <p id="settingText" class="setting-line"></p>
         </div>
-      </section>
-      <section class="progress-panel">
-        <div class="progress-heading"><div><p class="eyebrow">MISSION PROGRESS</p><h3><span id="progressCount">0 / 3</span> goals completed</h3></div><button id="hintBtn" class="secondary small" type="button">Need a hint?</button></div>
-        <div class="progress-track"><div id="progressBar" class="progress-fill"></div></div>
-        <ul id="gateList" class="gate-list"></ul><p id="hintText" class="hint-text hidden"></p>
-        <div id="tacticsRow" class="tactics-row hidden"><span>Techniques recognised:</span><div id="liveTactics" class="chips"></div></div>
-      </section>
-      <div id="chat" class="chat" aria-live="polite"></div>
-      <form id="chatForm" class="composer"><label class="sr-only" for="message">Your response</label><textarea id="message" maxlength="900" rows="2" placeholder="Type what you would say..." required></textarea><button id="sendBtn" class="primary" type="submit">Send</button></form>
-      <div class="sim-actions"><p id="simHint">Use the briefing and work towards the progress goals. Keep everything fictional.</p><button id="finishBtn" class="secondary" type="button">End scenario & debrief</button></div>
+        <div class="objective"><span>YOUR OBJECTIVE</span><strong id="objectiveText"></strong></div>
+      </div>
+
+      <div class="sim-layout">
+        <aside id="intel" class="intel" aria-label="What you know"></aside>
+        <div class="sim-main">
+          <div id="chat" class="chat" aria-live="polite"></div>
+          <div id="moveChips" class="chips moves" aria-label="Suggested moves"></div>
+          <form id="chatForm" class="composer">
+            <label class="sr-only" for="message">Your response</label>
+            <textarea id="message" maxlength="900" rows="2" placeholder="Type what you would say or do..." required></textarea>
+            <button id="sendBtn" class="primary" type="submit">Send</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="sim-actions">
+        <p id="simHint">Everything here is fictional. Type what you would actually say or do.</p>
+        <button id="finishBtn" class="secondary" type="button">End scenario &amp; debrief</button>
+      </div>
     </section>
 
     <section id="debrief" class="panel debrief hidden">
-      <div class="debrief-heading"><div><p class="eyebrow">AFTER-ACTION REPORT · SUBMITTABLE EVIDENCE</p><h2>What happened?</h2></div><div id="scoreRing" class="score-ring"><strong id="score">—</strong><span>/100</span></div></div>
-      <div class="debrief-grid"><article><h3>Classification</h3><p id="classification"></p></article><article><h3>Outcome</h3><p id="outcome"></p></article><article><h3>What you did well</h3><ul id="strengths"></ul></article><article><h3>Clues / opportunities missed</h3><ul id="missed"></ul></article><article><h3>Techniques seen</h3><div id="techniques" class="chips"></div></article><article><h3>Recommended controls</h3><ul id="controls"></ul></article></div>
-      <article class="exam-box"><span>AAQ-STYLE ANALYSIS PARAGRAPH</span><p id="examParagraph"></p></article>
-      <div class="report-actions"><button id="copyReport" class="secondary" type="button">Copy evidence text</button><button id="newScenario" class="primary" type="button">Try another scenario</button></div><p id="copyStatus" class="copy-status" aria-live="polite"></p>
+      <div class="debrief-heading"><div><p class="eyebrow">AFTER-ACTION REPORT</p><h2>What happened?</h2></div><div id="scoreRing" class="score-ring"><strong id="score">—</strong><span>/100</span></div></div>
+      <div id="flagReview" class="flag-review"></div>
+      <div class="debrief-grid">
+        <article><h3>Classification</h3><p id="classification"></p></article>
+        <article><h3>Outcome</h3><p id="outcome"></p></article>
+        <article><h3>What you did well</h3><ul id="strengths"></ul></article>
+        <article><h3>Clues / opportunities missed</h3><ul id="missed"></ul></article>
+        <article><h3>Techniques seen</h3><div id="techniques" class="chips"></div></article>
+        <article><h3>Recommended controls</h3><ul id="controls"></ul></article>
+      </div>
+      <article class="exam-box"><span>EXAM-STYLE PARAGRAPH</span><p id="examParagraph"></p></article>
+      <div class="report-actions">
+        <button id="copyReport" class="secondary" type="button">Copy evidence text</button>
+        <button id="newScenario" class="primary" type="button">Try another scenario</button>
+      </div>
+      <p id="copyStatus" class="copy-status" aria-live="polite"></p>
     </section>
   </main>
-  <script>window.SELAB_SCENARIOS='./public/scenarios.json';</script>
   <script src="./public/config.js"></script>
   <script src="./public/app.js"></script>
 </body>
