@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Safe classroom social engineering simulation for AAQ IT Unit 2">
+  <title>Social Engineer Lab</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">AAQ IT · UNIT 2 · SAFE SIMULATION</p>
+        <h1>Social Engineer <span>Lab</span></h1>
+        <p class="lede">Play both sides of a fictional social-engineering incident. Practise recognising manipulation, defending against it, and explaining the controls that reduce risk.</p>
+      </div>
+      <div class="hero-badge" aria-label="Fictional training only">
+        <strong>TRAINING ONLY</strong>
+        <span>No real targets · no real credentials</span>
+      </div>
+    </header>
+
+    <div id="backendWarning" class="backend-warning hidden" role="status"></div>
+
+    <section id="setup" class="panel setup-panel">
+      <div class="section-title">
+        <span class="step">01</span>
+        <div><h2>Choose your side</h2><p>Both modes use the same curriculum scenarios, but your job changes.</p></div>
+      </div>
+      <div class="mode-grid" role="radiogroup" aria-label="Choose mode">
+        <button class="mode-card selected defender" data-mode="defender" type="button">
+          <span class="mode-icon">🛡️</span><span><strong>Blue Team</strong><small>You are the defender. The AI tries to manipulate you.</small></span>
+        </button>
+        <button class="mode-card attacker" data-mode="attacker" type="button">
+          <span class="mode-icon">🎭</span><span><strong>Red Team</strong><small>You are the social engineer. The AI plays a fictional employee.</small></span>
+        </button>
+      </div>
+
+      <div class="section-title compact">
+        <span class="step">02</span>
+        <div><h2>Choose a scenario</h2><p>Each scenario maps to social engineering or physical security content.</p></div>
+      </div>
+      <div id="scenarioGrid" class="scenario-grid" aria-live="polite"></div>
+
+      <div class="setup-footer">
+        <label>Difficulty
+          <select id="difficulty">
+            <option value="easy">Level 1 · obvious clues</option>
+            <option value="medium" selected>Level 2 · realistic</option>
+            <option value="hard">Level 3 · targeted</option>
+          </select>
+        </label>
+        <button id="startBtn" class="primary" type="button" disabled>Start simulation</button>
+      </div>
+    </section>
+
+    <section id="simulation" class="panel simulation hidden" aria-live="polite">
+      <div class="sim-topbar">
+        <button id="backBtn" class="ghost" type="button">← Change scenario</button>
+        <div class="sim-status"><span id="modePill" class="pill"></span><span id="turnCount">0 / 16 turns</span></div>
+      </div>
+      <div class="scenario-brief">
+        <div><p class="eyebrow" id="channel"></p><h2 id="scenarioTitle"></h2><p id="briefText"></p></div>
+        <div class="objective"><span>YOUR OBJECTIVE</span><strong id="objectiveText"></strong></div>
+      </div>
+      <div id="chat" class="chat" aria-live="polite"></div>
+      <form id="chatForm" class="composer">
+        <label class="sr-only" for="message">Your response</label>
+        <textarea id="message" maxlength="900" rows="2" placeholder="Type what you would say..." required></textarea>
+        <button id="sendBtn" class="primary" type="submit">Send</button>
+      </form>
+      <div class="sim-actions">
+        <p id="simHint">Stay in role. This simulation only uses fictional people and information.</p>
+        <button id="finishBtn" class="secondary" type="button">End scenario & debrief</button>
+      </div>
+    </section>
+
+    <section id="debrief" class="panel debrief hidden">
+      <div class="debrief-heading"><div><p class="eyebrow">AFTER-ACTION REPORT</p><h2>What happened?</h2></div><div id="scoreRing" class="score-ring"><strong id="score">—</strong><span>/100</span></div></div>
+      <div class="debrief-grid">
+        <article><h3>Classification</h3><p id="classification"></p></article>
+        <article><h3>Outcome</h3><p id="outcome"></p></article>
+        <article><h3>What you did well</h3><ul id="strengths"></ul></article>
+        <article><h3>Clues / opportunities missed</h3><ul id="missed"></ul></article>
+        <article><h3>Techniques seen</h3><div id="techniques" class="chips"></div></article>
+        <article><h3>Recommended controls</h3><ul id="controls"></ul></article>
+      </div>
+      <article class="exam-box"><span>EXAM-STYLE PARAGRAPH</span><p id="examParagraph"></p></article>
+      <div class="report-actions">
+        <button id="copyReport" class="secondary" type="button">Copy evidence text</button>
+        <button id="newScenario" class="primary" type="button">Try another scenario</button>
+      </div>
+      <p id="copyStatus" class="copy-status" aria-live="polite"></p>
+    </section>
+  </main>
+  <script src="./config.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
