@@ -1,5 +1,5 @@
 name = "social-engineer-lab-api"
-main = "src/index-v3_2.js"
+main = "src/index-v3_3.js"
 compatibility_date = "2026-09-15"
 
 [vars]
