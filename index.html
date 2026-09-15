@@ -46,9 +46,9 @@
       <div class="setup-footer">
         <label>Difficulty
           <select id="difficulty">
-            <option value="easy">Level 1 · obvious clues</option>
+            <option value="easy">Level 1 · guided</option>
             <option value="medium" selected>Level 2 · realistic</option>
-            <option value="hard">Level 3 · targeted</option>
+            <option value="hard">Level 3 · challenging but winnable</option>
           </select>
         </label>
         <button id="startBtn" class="primary" type="button" disabled>Start simulation</button>
@@ -64,6 +64,15 @@
         <div><p class="eyebrow" id="channel"></p><h2 id="scenarioTitle"></h2><p id="briefText"></p></div>
         <div class="objective"><span>YOUR OBJECTIVE</span><strong id="objectiveText"></strong></div>
       </div>
+
+      <section class="intel-panel" aria-labelledby="intelTitle">
+        <div class="intel-heading">
+          <div><p class="eyebrow">SCENARIO INFORMATION</p><h3 id="intelTitle">What you know</h3><p id="intelIntro"></p></div>
+          <div class="difficulty-card"><span>DIFFICULTY</span><p id="difficultyBrief"></p></div>
+        </div>
+        <ul id="intelList" class="intel-list"></ul>
+      </section>
+
       <div id="chat" class="chat" aria-live="polite"></div>
       <form id="chatForm" class="composer">
         <label class="sr-only" for="message">Your response</label>
@@ -71,7 +80,7 @@
         <button id="sendBtn" class="primary" type="submit">Send</button>
       </form>
       <div class="sim-actions">
-        <p id="simHint">Stay in role. This simulation only uses fictional people and information.</p>
+        <p id="simHint">Use the information panel above. Stay in role and keep all people, organisations and details fictional.</p>
         <button id="finishBtn" class="secondary" type="button">End scenario & debrief</button>
       </div>
     </section>
