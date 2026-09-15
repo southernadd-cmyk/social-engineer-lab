@@ -9,9 +9,7 @@ window.SELAB_API_BASE = 'https://social-engineer-lab-api.mr-adam-clement.workers
   document.head.appendChild(link);
 })();
 
-// Make the Blue Team warning-sign mechanic explicit for students.
-// app.js rebuilds the intel panel after each turn, so observe those updates
-// and apply the guidance whenever the warning-sign panel is rendered.
+// Small classroom UX fixes layered on top of app.js.
 window.addEventListener('DOMContentLoaded', () => {
   const standardHelp = 'Spot something suspicious? Say it in your chat response and explain what looks wrong. Each distinct warning sign you identify is counted here. You still need to take the correct safe action to stop the attack.';
   const guidedHelp = 'Use this as a checklist. When you notice one of these warning signs, mention it in your reply to the attacker. It will turn green when the simulator recognises it. You still need to take the correct safe action to stop the attack.';
@@ -36,6 +34,25 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     });
   };
+
+  // app.js intentionally locks the composer when a mission reaches an outcome.
+  // A fresh mission must always start with a usable composer; previously the
+  // disabled state survived into the next scenario.
+  const unlockComposerForFreshMission = () => {
+    const message = document.querySelector('#message');
+    const send = document.querySelector('#sendBtn');
+    if (message) {
+      message.disabled = false;
+      message.value = '';
+    }
+    if (send) send.disabled = false;
+  };
+
+  document.querySelector('#startBtn')?.addEventListener('click', () => {
+    setTimeout(unlockComposerForFreshMission, 0);
+  });
+  document.querySelector('#newScenario')?.addEventListener('click', unlockComposerForFreshMission);
+  document.querySelector('#backBtn')?.addEventListener('click', unlockComposerForFreshMission);
 
   enhanceWarningHelp();
   new MutationObserver(enhanceWarningHelp).observe(document.body, { childList: true, subtree: true });
