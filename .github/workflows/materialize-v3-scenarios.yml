@@ -1,0 +1,48 @@
+name: Materialize v3 scenario source
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - deploy-v3-guided-scenarios
+    paths:
+      - scenarios.json.gz.b64
+      - scripts/sync-scenarios.mjs
+      - .github/workflows/materialize-v3-scenarios.yml
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: deploy-v3-guided-scenarios
+
+      - name: Restore canonical scenarios and generate copies
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f scenarios.json.gz.b64 ]; then
+            base64 --decode scenarios.json.gz.b64 | gzip --decompress > scenarios.json
+            node scripts/sync-scenarios.mjs
+            rm scenarios.json.gz.b64
+          else
+            echo "Scenario payload already materialized."
+          fi
+
+      - name: Commit generated scenario files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing to commit."
+          else
+            git commit -m "Materialize canonical v3 scenarios"
+            git push origin HEAD:deploy-v3-guided-scenarios
+          fi
