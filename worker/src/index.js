@@ -91,7 +91,7 @@ async function groq(messages,env,schemaName,schema,maxTokens){
     messages,
     temperature:0.6,
     reasoning_effort:'low',
-    reasoning_format:'hidden',
+    include_reasoning:false,
     max_completion_tokens:maxTokens,
     response_format:{
       type:'json_schema',
