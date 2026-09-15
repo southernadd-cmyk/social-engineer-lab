@@ -15,6 +15,7 @@ async function api(url, options={}){
 
 function text(el, value){ el.textContent = value ?? ''; }
 function escapeHtml(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+function studentTurns(){ return Math.max(0, state.messages.filter(m=>m.role==='user').length - 1); }
 
 function renderScenarios(){
   const grid = $('#scenarioGrid'); grid.innerHTML='';
@@ -75,6 +76,7 @@ async function startSimulation(){
   state.messages=[]; state.status='ongoing'; $('#chat').innerHTML='';
   text($('#scenarioTitle'),state.scenario.title); text($('#channel'),state.scenario.channel); text($('#briefText'),state.mode==='defender'?state.scenario.defenderBrief:state.scenario.attackerBrief); text($('#objectiveText'),objectiveFor(state.scenario));
   renderIntel();
+  text($('#simHint'),'Use the information panel above. Stay in role and keep all people, organisations and details fictional.');
   const pill=$('#modePill'); pill.className='pill'+(state.mode==='attacker'?' red':''); pill.textContent=state.mode==='defender'?'BLUE TEAM · DEFENDER':'RED TEAM · ATTACKER';
   updateTurns(); show('simulation'); addBubble('system','Simulation started. Use only the fictional information in the scenario panel. You can end the scenario at any time.');
   setBusy(true);
@@ -105,13 +107,13 @@ async function sendMessage(e){
   }catch(err){typing.remove(); addBubble('system',err.message);}
   finally{
     setBusy(false); updateTurns();
-    const userTurns=state.messages.filter(m=>m.role==='user').length;
-    if(state.mode==='attacker' && userTurns>=5 && state.status==='ongoing') text($('#simHint'),'Need a nudge? Use facts from the intelligence panel, combine two different persuasion techniques, and make the unsafe action you want explicit.');
-    if(state.messages.length>=16&&state.status==='ongoing'){state.status='defender_success'; addBubble('system','Turn limit reached. End the scenario to see the debrief.'); $('#message').disabled=true; $('#sendBtn').disabled=true;}
+    const turns=studentTurns();
+    if(state.mode==='attacker' && turns>=5 && state.status==='ongoing') text($('#simHint'),'Need a nudge? Use facts from the intelligence panel, combine two different persuasion techniques, and make the unsafe action you want explicit.');
+    if(turns>=16&&state.status==='ongoing'){state.status='defender_success'; addBubble('system','16 student turns reached. End the scenario to see the debrief.'); $('#message').disabled=true; $('#sendBtn').disabled=true;}
   }
 }
 
-function updateTurns(){const userTurns=state.messages.filter(m=>m.role==='user').length; text($('#turnCount'),`${Math.min(userTurns,16)} / 16 turns`);}
+function updateTurns(){text($('#turnCount'),`${Math.min(studentTurns(),16)} / 16 turns`);}
 
 async function finishDebrief(){
   if(state.busy||!state.scenario)return; setBusy(true); $('#finishBtn').textContent='Building debrief…';
