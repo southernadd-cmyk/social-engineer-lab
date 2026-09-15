@@ -17,19 +17,37 @@ const API_BASE = String(window.SELAB_API_BASE || '').replace(/\/$/, '');
 const API_READY = /^https:\/\//.test(API_BASE) && !API_BASE.includes('REPLACE-WITH-YOUR-WORKER');
 
 const level = () => state.difficulties[state.difficulty] || {};
-const turnLimit = () => level().turnLimit || 14;
+const CLASSROOM_TURN_LIMITS = { easy: 4, medium: 5, hard: 6 };
+const turnLimit = () => CLASSROOM_TURN_LIMITS[state.difficulty] || 5;
 const userTurns = () => state.messages.filter(m => m.role === 'user' && !m.seed).length;
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 async function api(path, options = {}) {
   if (!API_READY) throw new Error('The AI backend is not connected yet. Add the Cloudflare Worker URL to public/config.js.');
-  const res = await fetch(`${API_BASE}${path}`, { headers: { 'Content-Type': 'application/json' }, ...options });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
-  return data;
+  const hint = $('#simHint');
+  const previousHint = hint?.textContent || '';
+
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const res = await fetch(`${API_BASE}${path}`, { headers: { 'Content-Type': 'application/json' }, ...options });
+    const data = await res.json().catch(() => ({}));
+
+    if (res.status === 429 && attempt < 3) {
+      if (hint) text(hint, `AI classroom queue busy — retrying automatically (${attempt + 1}/3)…`);
+      const delay = 1600 * (attempt + 1) + Math.floor(Math.random() * 2200);
+      await wait(delay);
+      continue;
+    }
+
+    if (hint && previousHint) text(hint, previousHint);
+    if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+    return data;
+  }
+
+  throw new Error('The AI classroom queue is still busy. Wait a few seconds and send again.');
 }
 
 const esc = s => String(s).replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
-const text = (el, v) => { el.textContent = v ?? ''; };
+const text = (el, v) => { if (el) el.textContent = v ?? ''; };
 const li = items => (items || []).map(x => `<li>${esc(x)}</li>`).join('');
 
 /* ---------- setup ---------- */
@@ -38,7 +56,7 @@ function renderDifficulties() {
   const select = $('#difficulty');
   select.innerHTML = Object.values(state.difficulties)
     .map(d => `<option value="${esc(d.id)}"${d.id === state.difficulty ? ' selected' : ''}>${esc(d.label)}</option>`).join('');
-  text($('#difficultyBlurb'), level().blurb);
+  text($('#difficultyBlurb'), `${level().blurb} Classroom limit: ${turnLimit()} replies.`);
 }
 
 function renderScenarios() {
@@ -141,7 +159,7 @@ const aiLabel = () => (state.mode === 'defender' ? 'SIMULATED ATTACKER' : state.
 
 function setBusy(v) {
   state.busy = v;
-  $('#sendBtn').disabled = v;
+  $('#sendBtn').disabled = v || state.status !== 'ongoing';
   $('#message').disabled = v || state.status !== 'ongoing';
   $('#finishBtn').disabled = v;
 }
@@ -177,6 +195,49 @@ function payload() {
     progress: state.progress,
     messages: state.messages.map(({ role, content }) => ({ role, content }))
   });
+}
+
+const STATIC_OPENERS = {
+  vishing_it: {
+    defender: 'Hi Alex, Jordan from the Northbridge IT helpdesk. We have an authentication alert on your workstation and I want to get it cleared before payroll closes. Have you got a minute?',
+    attacker: 'Alex Morgan speaking. I am in the middle of payroll, so I only have a few minutes — what is the issue?'
+  },
+  spear_invoice: {
+    defender: 'Hi Priya, Chris from Harbour Office Supplies. I am chasing invoice NB-4817 for the West Wing refit. We have moved banks and need the payment details updated before today’s run closes.',
+    attacker: 'Priya Shah, Finance. I have NB-4817 in front of me and the payment run closes at 14:30. What has changed?'
+  },
+  whaling_ceo: {
+    defender: 'Jamie — Maya here. I am between meetings and need you to deal with something on Project Atlas before the finance cutoff. Keep this between us for now.',
+    attacker: 'Hi Maya. I know you are travelling today. What do you need me to handle?'
+  },
+  smishing_parcel: {
+    defender: 'SwiftParcel: We could not complete your laptop-stand delivery in the 12:00–2:00 window. A redelivery slot is available today if you arrange it now.',
+    attacker: 'I am expecting that laptop stand today. What do I need to do to rearrange it?'
+  },
+  tailgating: {
+    defender: 'Hi — Sam from HVAC. Leah Barnes booked us in for the maintenance job. I have both hands full and my pass is still in the van; could you hold this secure door for me?',
+    attacker: 'Morning. I know HVAC work is booked today, but contractors normally need to check in first. Can I help?'
+  },
+  shoulder_surfing: {
+    defender: 'Hi, I am here for the 11:00 Sales meeting. The guest Wi-Fi is down and I cannot find the meeting room — could you help while you open that staff door?',
+    attacker: 'Hi. Reception is hectic this morning, but I can point you towards the Sales meeting. What do you need?'
+  },
+  helpdesk_reset: {
+    defender: 'Hi, it is Owen Price in Sales. I replaced my phone and now MFA has locked me out. I have the client pitch at 11:00 — can you get the reset started?',
+    attacker: 'Northbridge Helpdesk, Riley speaking. Tell me what has happened and I will see what I can do.'
+  },
+  hr_benefits: {
+    defender: 'HR Benefits reminder: your enrolment is incomplete and the window closes at 17:00 today. Please complete your choices now so you do not miss this year’s options.',
+    attacker: 'Hi, Samira here. I know benefits enrolment closes today and I still need to finish my choices. What do I need to do?'
+  }
+};
+
+function openingLine() {
+  const entry = STATIC_OPENERS[state.scenario.id];
+  if (entry) return entry[state.mode];
+  return state.mode === 'defender'
+    ? `Hello — I am contacting you about ${state.scenario.title.toLowerCase()}.`
+    : `Hello. How can I help?`;
 }
 
 function applyTurn(data) {
@@ -217,22 +278,13 @@ async function startSimulation() {
   renderMoves();
   updateTurns();
   show('simulation');
-  bubble('system', 'Fictional scenario only. You can end it at any time.');
+  bubble('system', 'Fictional scenario only. The opening is preloaded to save classroom API capacity.');
 
-  setBusy(true);
-  try {
-    state.messages.push({ role: 'user', content: state.mode === 'defender' ? 'Begin the scenario.' : 'Begin. Wait for my opening message.', seed: true });
-    const data = await api('/api/chat', { method: 'POST', body: payload() });
-    state.messages.push({ role: 'assistant', content: data.reply });
-    bubble('ai', data.reply, aiLabel());
-    applyTurn(data);
-  } catch (e) {
-    bubble('system', e.message);
-  } finally {
-    setBusy(false);
-    updateTurns();
-    $('#message').focus();
-  }
+  const opener = openingLine();
+  state.messages.push({ role: 'assistant', content: opener, seed: true });
+  bubble('ai', opener, aiLabel());
+  updateTurns();
+  $('#message').focus();
 }
 
 async function sendMessage(e) {
@@ -262,15 +314,16 @@ async function sendMessage(e) {
     setBusy(false);
     updateTurns();
     if (state.status === 'ongoing' && userTurns() >= turnLimit()) {
+      state.status = 'turn_limit';
       state.outcome = state.mode === 'defender' ? 'defender_held_out' : 'attacker_ran_out';
       lockInput(state.mode === 'defender'
-        ? 'Out of turns. You never took the unsafe action, but you never completed the verification either. End the scenario to see what was missing.'
+        ? 'Out of turns. You never took the unsafe action, but you did not complete the verification either. End the scenario to see what was missing.'
         : 'Out of turns. The fictional employee did not comply. End the scenario to see which levers you missed.');
     }
   }
 }
 
-/* ---------- debrief ---------- */
+/* ---------- local debrief: zero API calls ---------- */
 
 function renderFlagReview() {
   const s = state.scenario;
@@ -294,6 +347,70 @@ function renderFlagReview() {
   }
 }
 
+function outcomeText() {
+  if (state.outcome === 'defender_success') return 'The defender used the safe process and the social-engineering attempt failed.';
+  if (state.outcome === 'attacker_success') return state.mode === 'attacker'
+    ? 'The fictional employee complied after enough persuasion levers were used.'
+    : 'The defender committed to the unsafe action and the simulated attack succeeded.';
+  if (state.outcome === 'defender_held_out') return 'The defender avoided the unsafe action but did not complete the required independent verification before the turn limit.';
+  if (state.outcome === 'attacker_ran_out') return 'The Red Team did not land enough persuasion levers before the turn limit.';
+  return 'The scenario was ended before a clear success condition was reached.';
+}
+
+function localScore() {
+  const s = state.scenario;
+  if (state.mode === 'defender') {
+    const ratio = state.progress.flagsSpotted.length / Math.max(1, s.defender.redFlags.length);
+    if (state.outcome === 'defender_success') return Math.min(100, Math.round(82 + ratio * 18));
+    if (state.outcome === 'attacker_success') return Math.round(30 + ratio * 35);
+    return Math.round(50 + ratio * 35);
+  }
+  const ratio = state.progress.beatsHit.length / Math.max(1, s.attacker.beats.length);
+  if (state.outcome === 'attacker_success') return Math.min(100, Math.round(78 + ratio * 22));
+  return Math.round(35 + ratio * 45);
+}
+
+function examParagraph(s) {
+  const humanFactor = state.mode === 'defender'
+    ? (s.defender.persona || 'time pressure and trust in familiar-looking requests')
+    : (s.defender.persona || 'a normal human tendency to trust plausible context');
+  return `${s.channel} is a social-engineering threat because the attacker tries to influence a person rather than defeat a technical control directly. In this scenario, the vulnerability is the human context: ${humanFactor} The likely impact is unauthorised access, disclosure, payment or another unsafe business action, depending on the request. The strongest control is to follow the approved process: ${s.defender.safeAction} This works because it creates an independent source of verification instead of trusting evidence supplied by the person making the request. Staff awareness supports the control by helping users recognise urgency, authority, familiarity and reassurance as possible manipulation techniques rather than proof that a request is genuine.`;
+}
+
+function buildLocalDebrief() {
+  const s = state.scenario;
+  let strengths = [];
+  let missed = [];
+
+  if (state.mode === 'defender') {
+    const got = s.defender.redFlags.filter(f => state.progress.flagsSpotted.includes(f.id));
+    const notGot = s.defender.redFlags.filter(f => !state.progress.flagsSpotted.includes(f.id));
+    strengths = got.slice(0, 4).map(f => `Recognised: ${f.label}.`);
+    if (state.outcome === 'defender_success') strengths.unshift('Committed to the correct independent verification / safe action.');
+    if (!strengths.length) strengths.push('Stayed engaged with the scenario and avoided entering any real information.');
+    missed = notGot.slice(0, 4).map(f => `${f.label}: ${f.detail}`);
+  } else {
+    const got = s.attacker.beats.filter(b => state.progress.beatsHit.includes(b.id));
+    const notGot = s.attacker.beats.filter(b => !state.progress.beatsHit.includes(b.id));
+    strengths = got.map(b => `Demonstrated how ${b.label.toLowerCase()} can influence a target in a fictional scenario.`);
+    if (!strengths.length) strengths.push('Kept the exercise inside the fictional scenario.');
+    missed = notGot.map(b => `The simulation did not show the lever: ${b.label}.`);
+  }
+
+  if (!missed.length) missed = ['All key scenario indicators / levers were covered.'];
+
+  return {
+    classification: s.channel,
+    outcome: outcomeText(),
+    strengths,
+    missed_clues: missed,
+    techniques_seen: s.debrief?.techniques || [],
+    recommended_controls: s.debrief?.controls || [s.defender.safeAction],
+    exam_paragraph: examParagraph(s),
+    score: localScore()
+  };
+}
+
 function renderDebrief(d) {
   const score = Math.max(0, Math.min(100, Number(d.score) || 0));
   text($('#score'), score);
@@ -309,30 +426,11 @@ function renderDebrief(d) {
   renderFlagReview();
 }
 
-async function finishDebrief() {
+function finishDebrief() {
   if (state.busy || !state.scenario) return;
-  setBusy(true);
-  $('#finishBtn').textContent = 'Building debrief…';
-  try {
-    const d = await api('/api/debrief', {
-      method: 'POST',
-      body: JSON.stringify({
-        mode: state.mode,
-        scenarioId: state.scenario.id,
-        difficulty: state.difficulty,
-        progress: state.progress,
-        outcome: state.outcome,
-        messages: state.messages.map(({ role, content }) => ({ role, content }))
-      })
-    });
-    renderDebrief(d);
-    show('debrief');
-  } catch (e) {
-    bubble('system', e.message);
-  } finally {
-    setBusy(false);
-    $('#finishBtn').textContent = 'End scenario & debrief';
-  }
+  const d = buildLocalDebrief();
+  renderDebrief(d);
+  show('debrief');
 }
 
 async function copyReport() {
@@ -367,7 +465,10 @@ $$('.mode-card').forEach(btn => btn.addEventListener('click', () => {
   state.mode = btn.dataset.mode;
   $$('.mode-card').forEach(x => x.classList.toggle('selected', x === btn));
 }));
-$('#difficulty').addEventListener('change', e => { state.difficulty = e.target.value; text($('#difficultyBlurb'), level().blurb); });
+$('#difficulty').addEventListener('change', e => {
+  state.difficulty = e.target.value;
+  text($('#difficultyBlurb'), `${level().blurb} Classroom limit: ${turnLimit()} replies.`);
+});
 $('#startBtn').addEventListener('click', startSimulation);
 $('#backBtn').addEventListener('click', () => show('setup'));
 $('#newScenario').addEventListener('click', () => { state.scenario = null; $('#startBtn').disabled = true; $$('.scenario-card').forEach(x => x.classList.remove('selected')); show('setup'); });
