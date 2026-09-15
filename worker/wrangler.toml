@@ -5,3 +5,4 @@ compatibility_date = "2026-09-15"
 [vars]
 GROQ_MODEL = "openai/gpt-oss-20b"
 ALLOWED_ORIGIN = "https://southernadd-cmyk.github.io"
+APP_RELEASE = "v3.1-guided-missions"
