@@ -131,7 +131,7 @@ function fallbackTurn(message) {
 }
 
 async function groqTurn(messages, env) {
-  if (!env.GROQ_API_KEY) throw new Error('GROQ_API_KEY is not configured on the Worker.');
+  if (!env?.GROQ_API_KEY) throw new Error('GROQ_API_KEY is not configured on the Worker.');
 
   let result = await requestGroq(messages, env, { type: 'json_schema', json_schema: { name: 'simulation_turn', strict: true, schema: chatSchema } });
   let message = result.data?.choices?.[0]?.message;
@@ -246,7 +246,7 @@ async function handleChat(request, env, origin) {
     ? defenderModePrompt(s, level)
     : attackerModePrompt(s, level, progress.beatsHit.filter(id => beatIds.has(id)));
 
-  const parsed = await groqTurn([{ role: 'system', content: system }, ...messages]);
+  const parsed = await groqTurn([{ role: 'system', content: system }, ...messages], env);
 
   const next = {
     beatsHit: mode === 'attacker' ? mergeIds(progress.beatsHit, parsed.beats_hit, beatIds) : progress.beatsHit,
@@ -353,7 +353,7 @@ export default {
           ok: true,
           model: env.GROQ_MODEL || 'openai/gpt-oss-20b',
           groqConfigured: Boolean(env.GROQ_API_KEY),
-          workerVersion: 'v3.1-classroom-optimised',
+          workerVersion: 'v3.1.1-classroom-optimised',
           scenarios: Object.keys(scenarios).length,
           chatMaxTokens: CHAT_MAX_TOKENS,
           historyMessages: MAX_HISTORY,
